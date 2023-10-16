@@ -60,9 +60,6 @@ func (s *service) AsyncStockCommand(stockCode string, chatroom string) error {
 		if err != nil {
 			return err
 		}
-		
-		feedData := content[1][0]
-		fmt.Printf("second record from csv file %s", feedData)
 
 		headers := content[0]
 		var symbolValue string
@@ -79,7 +76,7 @@ func (s *service) AsyncStockCommand(stockCode string, chatroom string) error {
 		if symbolValue == "" || closeValue == "" {
 			return err
 		}
-		fmt.Println("EXTRACCION EXITOSA", symbolValue + " quote is $" + closeValue + " per share")
+		fmt.Println(symbolValue + " quote is $" + closeValue + " per share")
 	}
 
 	return nil
