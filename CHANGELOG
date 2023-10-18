@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.0.12] - 2023-10-18 (CHB-5)
+
+### Added
+
+- Added emitter and listener to use RabbitMQ for processing of commands by [Arturo Vial](https://github.com/ratolibre1)
+
 ## [0.0.11] - 2023-10-18 (CHB-14)
 
 ### Added

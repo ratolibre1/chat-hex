@@ -1,13 +1,18 @@
 package commands
 
 import (
+	"chat-hex/api/v1/rabbit/requests"
 	"chat-hex/business"
+	"chat-hex/business/emitter"
 	"chat-hex/business/messages"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/streadway/amqp"
 )
 
 type CommandSpec struct {
@@ -18,11 +23,15 @@ type CommandSpec struct {
 
 type service struct{
 	messagesService	messages.Service
+	emitterService emitter.Service
+	ch *amqp.Channel
 }
 
-func NewService(messagesService	messages.Service) Service {
+func NewService(messagesService	messages.Service, emitterService emitter.Service, ch *amqp.Channel) Service {
 	return &service{
 		messagesService: messagesService,
+		emitterService: emitterService,
+		ch: ch,
 	}
 }
 
@@ -36,9 +45,20 @@ func (s *service) ProcessCommand(commandSpec CommandSpec) error {
 			return business.ErrInvalidCommand
 		}
 
-		err := s.AsyncStockCommand(stockCode, commandSpec.Chatroom)
+		stockRequest := requests.StockRequestResponse{
+			StockCode: stockCode,
+			Chatroom: commandSpec.Chatroom,
+		}
+
+		jsonData, err := json.Marshal(stockRequest)
 		if err != nil {
-			return business.ErrInvalidCommand
+				return err
+		}
+
+
+		err = s.emitterService.SendMessage(string(jsonData), s.ch, "chatQueue")
+		if err != nil {
+				return err
 		}
 
 		return nil
