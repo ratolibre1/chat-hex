@@ -68,7 +68,7 @@ func (repo *MongoDBRepository) GetMessagesByChatroom(chatroom string) ([]message
     bson.M{"$sort": bson.M{"timestamp": -1}},
     bson.M{"$limit": 50},
     bson.M{"$sort": bson.M{"timestamp": 1}},
-}
+	}
 
 	cursor, err := repo.collection.Aggregate(context.Background(), pipeline)
 	if err != nil {
