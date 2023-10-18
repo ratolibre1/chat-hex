@@ -4,6 +4,7 @@ import (
 	"chat-hex/api/v1/auth"
 	"chat-hex/api/v1/chatrooms"
 	"chat-hex/api/v1/messages"
+	"chat-hex/api/v1/preload"
 	"chat-hex/api/v1/users"
 	"chat-hex/middlewares"
 
@@ -11,7 +12,7 @@ import (
 )
 
 //RegisterPaths Register all V1 API with routing path
-func RegisterPaths(e *echo.Echo, authController *auth.Controller, usersController *users.Controller, chatroomsController *chatrooms.Controller, messagesController *messages.Controller) {
+func RegisterPaths(e *echo.Echo, authController *auth.Controller, preloadController *preload.Controller, usersController *users.Controller, chatroomsController *chatrooms.Controller, messagesController *messages.Controller) {
 	if authController == nil {
 		panic("auth controller cannot be nil")
 	}
@@ -27,6 +28,10 @@ func RegisterPaths(e *echo.Echo, authController *auth.Controller, usersControlle
 	//auth
 	authV1 := e.Group("v1/auth")
 	authV1.POST("/token", authController.GenerateToken)
+
+	//preload
+	preloadV1 := e.Group("v1/preload")
+	preloadV1.POST("", preloadController.PopulateMongoDB)
 
 	//users
 	usersV1 := e.Group("v1/users")
