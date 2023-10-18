@@ -91,12 +91,14 @@ func main() {
 	authService := authService.NewService()
 	authController := authController.NewController(authService, usersService)
 
-	//initiate commands
-	commandsService := commandsService.NewService()
 
 	//initiate messages
 	messagesRepo := messagesRepository.NewMongoDBRepository(dbConnection)
 	messagesService := messagesService.NewService(messagesRepo)
+
+	
+	//initiate commands
+	commandsService := commandsService.NewService(messagesService)
 	messagesController := messagesController.NewController(messagesService, commandsService)
 
 	//register paths

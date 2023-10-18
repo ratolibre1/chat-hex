@@ -2,8 +2,12 @@ package commands
 
 import (
 	"chat-hex/business"
-	"fmt"
+	"chat-hex/business/messages"
+	"encoding/csv"
+	"errors"
+	"net/http"
 	"strings"
+	"time"
 )
 
 type CommandSpec struct {
@@ -12,10 +16,14 @@ type CommandSpec struct {
 	Chatroom string `validate:"required"`
 }
 
-type service struct{}
+type service struct{
+	messagesService	messages.Service
+}
 
-func NewService() Service {
-	return &service{}
+func NewService(messagesService	messages.Service) Service {
+	return &service{
+		messagesService: messagesService,
+	}
 }
 
 func (s *service) ProcessCommand(commandSpec CommandSpec) error {
@@ -40,6 +48,49 @@ func (s *service) ProcessCommand(commandSpec CommandSpec) error {
 }
 
 func (s *service) AsyncStockCommand(stockCode string, chatroom string) error {
-	fmt.Println("STOCK CODE IS", stockCode, "CHATROOM IS", chatroom)
+	httpRequest, err := http.NewRequest("GET", "https://stooq.com/q/l/?s="+stockCode+"&f=sd2t2ohlcv&h&e=csv", nil) //getURL is presignedURL which returns csv file.
+	if err != nil {
+		return err
+	}
+
+	client := http.Client{Timeout: time.Second * 10}
+	response, err := client.Do(httpRequest)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode == http.StatusOK {
+		content, err := csv.NewReader(response.Body).ReadAll()
+		if err != nil {
+			return err
+		}
+
+		headers := content[0]
+		var symbolValue string
+		var closeValue string
+		for index, header := range headers {
+			if strings.ToLower(header) == "symbol" {
+				symbolValue = content[1][index]
+			}
+			if strings.ToLower(header) == "close" {
+				closeValue = content[1][index]
+			}
+		}
+
+		if symbolValue == "" || closeValue == "" || strings.ToLower(closeValue) == "n/d" {
+			return errors.New("unavailable values")
+		}
+
+		stockMessageSpec  := messages.InsertMessageSpec{
+			Content: symbolValue + " quote is $" + closeValue + " per share",
+			Sender: "Stockbot",
+			Chatroom: chatroom,
+		}
+
+		 err = s.messagesService.InsertMessage(stockMessageSpec)
+		 if err != nil {
+			return err
+		 }
+	}
+
 	return nil
 }
