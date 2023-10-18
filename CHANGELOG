@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.0.11] - 2023-10-18 (CHB-14)
+
+### Added
+
+- Added endpoint to preload the needed data in mongoDB by [Arturo Vial](https://github.com/ratolibre1)
+
+### Removed
+
+- Removed unnecessary files from the old base project ("user" files) by [Arturo Vial](https://github.com/ratolibre1)
+
 ## [0.0.10] - 2023-10-18 (CHB-4)
 
 ### Added

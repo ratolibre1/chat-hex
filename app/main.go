@@ -10,14 +10,17 @@ import (
 	authController "chat-hex/api/v1/auth"
 	chatroomsController "chat-hex/api/v1/chatrooms"
 	messagesController "chat-hex/api/v1/messages"
+	preloadController "chat-hex/api/v1/preload"
 	usersController "chat-hex/api/v1/users"
 	authService "chat-hex/business/auth"
 	chatroomsService "chat-hex/business/chatrooms"
 	commandsService "chat-hex/business/commands"
 	messagesService "chat-hex/business/messages"
+	preloadService "chat-hex/business/preload"
 	usersService "chat-hex/business/users"
 	chatroomsRepository "chat-hex/modules/chatrooms"
 	messagesRepository "chat-hex/modules/messages"
+	preloadRepository "chat-hex/modules/preload"
 	usersRepository "chat-hex/modules/users"
 
 	"os"
@@ -75,7 +78,12 @@ func main() {
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
-	}))  
+	})) 
+
+	//initiate preload
+	preloadRepo := preloadRepository.NewMongoDBRepository(dbConnection)
+	preloadService := preloadService.NewService(preloadRepo)
+	preloadController := preloadController.NewController(preloadService)
 
 	//initiate chatrooms
 	chatroomsRepo := chatroomsRepository.NewMongoDBRepository(dbConnection)
@@ -102,7 +110,7 @@ func main() {
 	messagesController := messagesController.NewController(messagesService, commandsService)
 
 	//register paths
-	api.RegisterPaths(e, authController, usersController, chatroomsController, messagesController)
+	api.RegisterPaths(e, authController, preloadController, usersController, chatroomsController, messagesController)
 
 	// run server
 	go func() {
