@@ -7,7 +7,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoDBRepository struct {
@@ -64,13 +63,14 @@ func (repo *MongoDBRepository) InsertMessage(message messages.Message) error {
 func (repo *MongoDBRepository) GetMessagesByChatroom(chatroom string) ([]messages.Message, error) {
 	var messages []messages.Message
 
-	filter := bson.M{"chatroom": chatroom}
+	pipeline := bson.A{
+		bson.M{"$match": bson.M{"chatroom": chatroom}},
+    bson.M{"$sort": bson.M{"timestamp": -1}},
+    bson.M{"$limit": 50},
+    bson.M{"$sort": bson.M{"timestamp": 1}},
+}
 
-	option := options.Find()
-	option.SetSort(bson.D{{Key: "timestamp", Value: -1}})
-	option.SetLimit(50)
-
-	cursor, err := repo.collection.Find(context.Background(), filter, option)
+	cursor, err := repo.collection.Aggregate(context.Background(), pipeline)
 	if err != nil {
 		return messages, err
 	}
