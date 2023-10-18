@@ -4,6 +4,7 @@ import (
 	"chat-hex/config"
 	"chat-hex/modules/mongodb"
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"chat-hex/api"
@@ -11,10 +12,13 @@ import (
 	chatroomsController "chat-hex/api/v1/chatrooms"
 	messagesController "chat-hex/api/v1/messages"
 	preloadController "chat-hex/api/v1/preload"
+	"chat-hex/api/v1/rabbit/requests"
 	usersController "chat-hex/api/v1/users"
 	authService "chat-hex/business/auth"
 	chatroomsService "chat-hex/business/chatrooms"
 	commandsService "chat-hex/business/commands"
+	emitterService "chat-hex/business/emitter"
+	listenerService "chat-hex/business/listener"
 	messagesService "chat-hex/business/messages"
 	preloadService "chat-hex/business/preload"
 	usersService "chat-hex/business/users"
@@ -30,6 +34,7 @@ import (
 	echo "github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/streadway/amqp"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -78,7 +83,10 @@ func main() {
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
-	})) 
+	}))
+
+	//initiate emitter
+	emitterService := emitterService.NewService()
 
 	//initiate preload
 	preloadRepo := preloadRepository.NewMongoDBRepository(dbConnection)
@@ -104,13 +112,65 @@ func main() {
 	messagesRepo := messagesRepository.NewMongoDBRepository(dbConnection)
 	messagesService := messagesService.NewService(messagesRepo)
 
+	//configure RabbitMQ
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		panic(err)
+	}
+	defer ch.Close()
+
+	_, err = ch.QueueDeclare(
+    "chatQueue",
+    false,
+    false,
+    false,
+    false,
+    nil,
+	)
+	if err != nil {
+			panic(err)
+	}
 	
 	//initiate commands
-	commandsService := commandsService.NewService(messagesService)
+	commandsService := commandsService.NewService(messagesService, emitterService, ch)
 	messagesController := messagesController.NewController(messagesService, commandsService)
+
+	//initiate listener
+	listenerService := listenerService.NewService()
 
 	//register paths
 	api.RegisterPaths(e, authController, preloadController, usersController, chatroomsController, messagesController)
+
+	//setup the RabbitMQ consumer
+	msgs, err := listenerService.ConsumeMessages(ch, "chatQueue")
+	if err != nil {
+		panic(err)
+	}
+
+	//process queue
+	go func() {
+		for msg := range msgs {
+
+			var stockResponse requests.StockRequestResponse
+
+			err := json.Unmarshal(msg.Body, &stockResponse)
+			if err != nil {
+					log.Printf("Error al deserializar JSON: %v", err)
+					continue
+			}
+
+			err = commandsService.AsyncStockCommand(stockResponse.StockCode, stockResponse.Chatroom)
+			if err != nil{
+				log.Info("error processing stock command")
+			}
+		}
+	}()
 
 	// run server
 	go func() {
