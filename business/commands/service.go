@@ -2,8 +2,9 @@ package commands
 
 import (
 	"chat-hex/business"
+	"chat-hex/business/messages"
 	"encoding/csv"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -15,10 +16,14 @@ type CommandSpec struct {
 	Chatroom string `validate:"required"`
 }
 
-type service struct{}
+type service struct{
+	messagesService	messages.Service
+}
 
-func NewService() Service {
-	return &service{}
+func NewService(messagesService	messages.Service) Service {
+	return &service{
+		messagesService: messagesService,
+	}
 }
 
 func (s *service) ProcessCommand(commandSpec CommandSpec) error {
@@ -43,8 +48,6 @@ func (s *service) ProcessCommand(commandSpec CommandSpec) error {
 }
 
 func (s *service) AsyncStockCommand(stockCode string, chatroom string) error {
-	fmt.Println("STOCK CODE IS", stockCode, "CHATROOM IS", chatroom)
-
 	httpRequest, err := http.NewRequest("GET", "https://stooq.com/q/l/?s="+stockCode+"&f=sd2t2ohlcv&h&e=csv", nil) //getURL is presignedURL which returns csv file.
 	if err != nil {
 		return err
@@ -73,10 +76,20 @@ func (s *service) AsyncStockCommand(stockCode string, chatroom string) error {
 			}
 		}
 
-		if symbolValue == "" || closeValue == "" {
-			return err
+		if symbolValue == "" || closeValue == "" || strings.ToLower(closeValue) == "n/d" {
+			return errors.New("unavailable values")
 		}
-		fmt.Println(symbolValue + " quote is $" + closeValue + " per share")
+
+		stockMessageSpec  := messages.InsertMessageSpec{
+			Content: symbolValue + " quote is $" + closeValue + " per share",
+			Sender: "Stockbot",
+			Chatroom: chatroom,
+		}
+
+		 err = s.messagesService.InsertMessage(stockMessageSpec)
+		 if err != nil {
+			return err
+		 }
 	}
 
 	return nil
