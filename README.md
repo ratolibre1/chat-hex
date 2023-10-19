@@ -23,9 +23,10 @@
 # Some considerations
 
 - I tried to complete all the mandatory points. I got stuck implementing Unit Tests as it's something I've never done before in Golang (I can write UTs in Angular just fine)
+- I chose heagonal architecture as I believe it is very orderly and allows devs to separate the layers of the app
 - I tried to work as if I was part of a team doing Scrum. Instead of Jira I kept a [Trello Board](https://trello.com/invite/b/sgfmFApA/ATTI4dd11900533d406bf88694ea4daa3309FCC10A6A/chat-hex) with my list of tasks.
 - I implemented JWT for Authentication as they are simple enough to implement and secure enough to block access to protected URLs
-- The RabbitMQ code is sloppy as I was focusing more in getting it done than in doing it nice. Apologies for that
+- The RabbitMQ code is a bit sloppy as I was focusing more in getting it done than in doing it nice. Apologies for that, it still gets the job done
 - I wanted to implement websockets for the chat to work in real time. I didn't have the time to so instead the front just pings the messages endpoint once per second as an MVP
 - The front is a bit ugly but I expect it to be understandable enoguh. I promise I can write more beautiful Angular code if given the time
   
