@@ -1,13 +1,11 @@
 # To Run this Project
 
-- You need to have `Go v1.17` installed for the back end
-- You'll also need `Angular CLI v12.1.2` and `Node v14.15.0` installed for the front end
+- You need to have `Go v1.17` or superior installed for the back end
 - Clone this project
-- Make sure you have a Local MongoDB database set up on port 27017
+- Make sure you have a Local MongoDB database set up on port 27017 (default port)
 - To execute the back end of the app, run `go run app/main.go`
 - On Postman execute the following cURL: `curl --location --request POST 'http://localhost:3000/v1/preload'` to populate the DB with the required Users and Chatrooms data (you should see 3 users under Users collection, and 2 chatrooms under Chatrooms collection)
-- Git clone the front project from [this URL](https://github.com/ratolibre1/chat-ang)
-- Run `ng serve` on the root of the front project
+- Get the Docker project for the front available at [DockerHub](https://hub.docker.com/r/ratolibre1/front). To do so, run `docker pull ratolibre1/front` followed by `docker run -p 4200:4200 ratolibre1/front`
 
 # To Review this Project
 
